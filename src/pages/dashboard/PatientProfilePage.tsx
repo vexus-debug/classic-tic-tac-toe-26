@@ -589,14 +589,14 @@ export default function PatientProfilePage() {
                         {
                           patientName: `${patient.first_name} ${patient.last_name}`,
                           clinicianName: (rx.staff as any)?.full_name || "Unknown",
-                          date: rx.prescription_date,
+                          id: rx.id, date: rx.prescription_date,
                           diagnosis: rx.diagnosis,
                           notes: rx.notes,
                           medications: (rx.prescription_medications || []).map((m: any) => ({
                             name: m.medication_name || m.name,
                             dosage: m.dosage,
                             frequency: m.frequency,
-                            duration: m.duration,
+                            duration: m.duration, instructions: m.instructions,
                           })),
                         },
                         currentOrg?.org_name
