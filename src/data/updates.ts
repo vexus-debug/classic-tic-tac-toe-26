@@ -13,6 +13,15 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    version: "v2.16.1",
+    date: "October 29, 2026",
+    title: "Curated AI skill library",
+    kind: "improvement",
+    items: [
+      { kind: "improvement", text: "Added 111 top-rated skills across 25 categories to guide how Clinexus is built and maintained." },
+    ],
+  },
+  {
     version: "v2.16.0",
     date: "October 29, 2026",
     title: "Morning huddle on the dental overview",
