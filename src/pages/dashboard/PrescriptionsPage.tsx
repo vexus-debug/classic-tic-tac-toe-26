@@ -103,7 +103,7 @@ export default function PrescriptionsPage() {
                       id: rx.id, date: rx.prescription_date,
                       diagnosis: rx.diagnosis,
                       notes: rx.notes,
-                      medications: (rx.prescription_medications || []).map((m: any) => ({ name: m.medication_name || m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration })),
+                      medications: (rx.prescription_medications || []).map((m: any) => ({ name: m.medication_name || m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration, instructions: m.instructions })),
                     }, currentOrg?.org_name)}>
                       <Printer className="h-3.5 w-3.5" />
                     </Button>

@@ -13,6 +13,18 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    version: "v2.17.0",
+    date: "October 29, 2026",
+    title: "Safer, fuller prescriptions",
+    kind: "feature",
+    items: [
+      { kind: "feature", text: "Child dosing by weight: enter kg, pick a drug, and add the calculated dose and quantity in one tap." },
+      { kind: "feature", text: "Prescriptions now record strength, form, quantity to dispense and instructions." },
+      { kind: "improvement", text: "New warnings for painkillers with stomach ulcers or kidney problems, and adrenaline anaesthetic with high blood pressure." },
+      { kind: "improvement", text: "Printed slips show a reference number, verification QR code, prescriber registration number and signature." },
+    ],
+  },
+  {
     version: "v2.16.1",
     date: "October 29, 2026",
     title: "Curated AI skill library",
