@@ -100,10 +100,10 @@ export default function PrescriptionsPage() {
                     <Button variant="ghost" size="icon" aria-label="Print prescription" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity focus-visible:opacity-100" data-tour="prescriptions-print" onClick={() => printPrescription({
                       patientName: rx.patients ? `${rx.patients.first_name} ${rx.patients.last_name}` : "Unknown",
                       clinicianName: rx.staff?.full_name || "Unknown",
-                      date: rx.prescription_date,
+                      id: rx.id, date: rx.prescription_date,
                       diagnosis: rx.diagnosis,
                       notes: rx.notes,
-                      medications: (rx.prescription_medications || []).map((m: any) => ({ name: m.medication_name || m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration })),
+                      medications: (rx.prescription_medications || []).map((m: any) => ({ name: m.medication_name || m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration, instructions: m.instructions })),
                     }, currentOrg?.org_name)}>
                       <Printer className="h-3.5 w-3.5" />
                     </Button>

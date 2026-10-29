@@ -30,3 +30,12 @@ describe("structured intake tags", () => {
     expect(detectMedicalAlerts(toggleAlertInHistory(on, "Bisphosphonates"))).not.toContain("Bisphosphonates");
   });
 });
+
+describe("phase 5 systemic checks", () => {
+  it("flags ibuprofen with peptic ulcer", () => {
+    expect(checkPrescriptionConflicts(["Ibuprofen 400mg"], "", "Peptic ulcer").length).toBeGreaterThan(0);
+  });
+  it("flags lidocaine with adrenaline in hypertension", () => {
+    expect(checkPrescriptionConflicts(["Lidocaine with adrenaline"], "", "Hypertension").length).toBeGreaterThan(0);
+  });
+});

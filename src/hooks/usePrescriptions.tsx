@@ -41,7 +41,7 @@ export function useCreatePrescription() {
     mutationFn: async (input: {
       patient_id: string;
       dentist_id: string;
-      medications: { name: string; dosage: string; frequency: string; duration: string }[];
+      medications: { name: string; dosage: string; frequency: string; duration: string; instructions?: string }[];
       diagnosis?: string;
       notes?: string;
     }) => {
@@ -52,7 +52,7 @@ export function useCreatePrescription() {
         .single();
       if (rxErr) throw rxErr;
 
-      const meds = input.medications.map((m) => ({ medication_name: m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration, prescription_id: rx.id }));
+      const meds = input.medications.map((m) => ({ medication_name: m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration, instructions: m.instructions ?? null, prescription_id: rx.id }));
       const { error: medErr } = await (supabase as any).from("prescription_medications").insert(meds);
       if (medErr) throw medErr;
 

@@ -23,6 +23,7 @@ import { useClinicTerms } from "@/hooks/useClinicTerms";
 import { useDentalChartEntries } from "@/hooks/useDentalCharts";
 import { Textarea } from "@/components/ui/textarea";
 import { checkPrescriptionConflicts } from "@/lib/medicalSafety";
+import { DOSING_DRUGS, calcDose } from "@/lib/dentalDosing";
 
 const prescriptionTemplates = [
   {
@@ -86,6 +87,10 @@ const prescriptionSchema = z.object({
     dosage: z.string().trim().min(1, "Required"),
     frequency: z.string().trim().min(1, "Required"),
     duration: z.string().trim().min(1, "Required"),
+    strength: z.string().trim().max(50).optional(),
+    form: z.string().trim().max(30).optional(),
+    quantity: z.string().trim().max(30).optional(),
+    instructions: z.string().trim().max(300).optional(),
   })).min(1, "Add at least one medication"),
 });
 
@@ -167,6 +172,16 @@ export function CreatePrescriptionDialog({ open, onOpenChange, preselectedPatien
     ? checkPrescriptionConflicts((watchedMeds || []).map((m) => m?.name || ""), selectedPatient.allergies, selectedPatient.medical_history)
     : [];
   const [overrideReason, setOverrideReason] = useState("");
+  const [weight, setWeight] = useState("");
+  const [dosingDrug, setDosingDrug] = useState(DOSING_DRUGS[0].name);
+  const dd = DOSING_DRUGS.find((d) => d.name === dosingDrug)!;
+  const dose = Number(weight) > 0 ? calcDose(dd, Number(weight)) : null;
+  function addCalculatedDose() {
+    if (!dose) return;
+    const empty = (form.getValues("medications") || []).findIndex((m) => !m.name);
+    const med = { name: dd.name, strength: `${dd.suspensionMgPer5ml}mg/5ml`, form: "Suspension", dosage: `${dose.doseMg}mg (${dose.doseMl}ml)`, frequency: dd.frequency, duration: dd.duration, quantity: `${dose.totalMl}ml`, instructions: `Weight ${weight}kg` };
+    if (empty >= 0) form.setValue(`medications.${empty}`, med); else append(med);
+  }
   useEffect(() => { if (open) setOverrideReason(""); }, [open]);
 
   async function runSafetyCheck(data: PrescriptionForm) {
@@ -209,7 +224,11 @@ export function CreatePrescriptionDialog({ open, onOpenChange, preselectedPatien
           conflicts.length ? `Contraindication overridden: ${conflicts.map((c) => `${c.medication} (${c.reason})`).join("; ")}. Justification: ${overrideReason.trim()}` : "",
           res && res.warnings.length ? `Safety warnings overridden by clinician. Rationale: ${rationale.trim()}\nWarnings: ${res.warnings.join(" / ")}` : "",
         ].filter(Boolean).join("\n") || undefined,
-        medications: data.medications as { name: string; dosage: string; frequency: string; duration: string }[],
+        medications: data.medications.map((m) => ({
+          name: [m.name, m.strength, m.form].filter(Boolean).join(" "),
+          dosage: m.dosage, frequency: m.frequency, duration: m.duration,
+          instructions: [m.quantity ? `Dispense: ${m.quantity}` : "", m.instructions || ""].filter(Boolean).join(" · ") || undefined,
+        })),
       },
       {
         onSuccess: () => {
@@ -293,6 +312,24 @@ export function CreatePrescriptionDialog({ open, onOpenChange, preselectedPatien
               </div>
             </div>
 
+            {/* Weight-based dosing */}
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+              <FormLabel className="block">Child dosing by weight</FormLabel>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Input type="number" inputMode="decimal" min={1} max={150} placeholder="Weight (kg)" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                <Select value={dosingDrug} onValueChange={setDosingDrug}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{DOSING_DRUGS.map((d) => <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>)}</SelectContent>
+                </Select>
+                <Button type="button" variant="outline" disabled={!dose} onClick={addCalculatedDose}>Add to list</Button>
+              </div>
+              {dose && (
+                <p className="text-xs text-muted-foreground">
+                  {dose.doseMg}mg per dose ({dose.doseMl}ml of {dd.suspensionMgPer5ml}mg/5ml) · {dd.frequency} · {dd.duration} · dispense {dose.totalMl}ml{dose.capped ? " · capped at adult max" : ""}
+                </p>
+              )}
+            </div>
+
             {/* Medications */}
             <div className="space-y-3">
               <FormLabel>Medications *</FormLabel>
@@ -309,7 +346,22 @@ export function CreatePrescriptionDialog({ open, onOpenChange, preselectedPatien
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField control={form.control} name={`medications.${index}.strength`} render={({ field }) => (
+                      <FormItem><FormControl><Input placeholder="Strength (e.g. 500mg)" {...field} value={field.value || ""} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`medications.${index}.form`} render={({ field }) => (
+                      <FormItem>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Form" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {["Tablet", "Capsule", "Suspension", "Mouthwash", "Gel", "Drops", "Injection"].map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <FormField control={form.control} name={`medications.${index}.dosage`} render={({ field }) => (
                       <FormItem>
                         <FormControl><Input placeholder="Dosage" {...field} /></FormControl>
@@ -327,6 +379,14 @@ export function CreatePrescriptionDialog({ open, onOpenChange, preselectedPatien
                         <FormControl><Input placeholder="Duration" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
+                    )} />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <FormField control={form.control} name={`medications.${index}.quantity`} render={({ field }) => (
+                      <FormItem><FormControl><Input placeholder="Qty to dispense" {...field} value={field.value || ""} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`medications.${index}.instructions`} render={({ field }) => (
+                      <FormItem className="sm:col-span-2"><FormControl><Input placeholder="Instructions (e.g. take after meals)" {...field} value={field.value || ""} /></FormControl></FormItem>
                     )} />
                   </div>
                 </div>

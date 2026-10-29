@@ -15,6 +15,8 @@ export const MEDICAL_ALERTS = [
   "Asthma",
   "Epilepsy",
   "HIV / Hepatitis",
+  "Peptic ulcer",
+  "Renal impairment",
 ] as const;
 
 // Allergy class → drug name fragments that belong to it (lowercase).
@@ -45,6 +47,8 @@ export const ALERT_GUIDANCE: Record<string, string> = {
   "Asthma": "Keep inhaler at hand; avoid NSAIDs.",
   "Epilepsy": "Confirm seizure control; keep appointments short and calm.",
   "HIV / Hepatitis": "Standard precautions; check bleeding and medication interactions.",
+  "Peptic ulcer": "Avoid NSAIDs; prefer paracetamol.",
+  "Renal impairment": "Avoid NSAIDs; adjust antibiotic doses.",
 };
 
 /** Add or remove a medical alert line in the free-text history. */
@@ -73,6 +77,8 @@ export function detectMedicalAlerts(history?: string | null): string[] {
   if (/asthma/.test(h)) found.push("Asthma");
   if (/epilep|seizure/.test(h)) found.push("Epilepsy");
   if (/\bhiv\b|hepatitis|hbv|hcv/.test(h)) found.push("HIV / Hepatitis");
+  if (/peptic|stomach ulcer|gastric ulcer|duodenal ulcer|\bpud\b/.test(h)) found.push("Peptic ulcer");
+  if (/renal|kidney|ckd|dialysis/.test(h)) found.push("Renal impairment");
   return found;
 }
 
@@ -95,6 +101,9 @@ export function checkPrescriptionConflicts(medications: string[], allergiesText?
     if (isNsaid && alerts.includes("Anticoagulants / bleeding disorder")) out.push({ medication: raw, reason: "NSAID with anticoagulants / bleeding disorder raises bleeding risk", alternative: "Paracetamol", severity: "caution" });
     if (isNsaid && alerts.includes("Pregnant")) out.push({ medication: raw, reason: "NSAIDs are generally avoided in pregnancy", alternative: "Paracetamol", severity: "caution" });
     if (isNsaid && alerts.includes("Asthma")) out.push({ medication: raw, reason: "NSAIDs can trigger bronchospasm in asthma", alternative: "Paracetamol", severity: "caution" });
+    if (isNsaid && alerts.includes("Peptic ulcer")) out.push({ medication: raw, reason: "NSAIDs can cause bleeding in peptic ulcer disease", alternative: "Paracetamol", severity: "caution" });
+    if (isNsaid && alerts.includes("Renal impairment")) out.push({ medication: raw, reason: "NSAIDs can worsen kidney function", alternative: "Paracetamol", severity: "caution" });
+    if (/epinephrine|adrenaline|lidocaine with|lignocaine with|articaine/.test(med) && alerts.includes("Hypertension")) out.push({ medication: raw, reason: "Adrenaline in local anaesthetic — check BP; avoid in uncontrolled hypertension", alternative: "Plain mepivacaine 3% or limit cartridges", severity: "caution" });
     if (/metronidazole/.test(med) && /warfarin/.test((history || "").toLowerCase())) out.push({ medication: raw, reason: "Metronidazole strongly increases warfarin effect", severity: "caution" });
   }
   return out;
